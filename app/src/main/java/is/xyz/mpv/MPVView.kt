@@ -10,6 +10,11 @@ import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
 import `is`.xyz.mpv.MPVLib.mpvFormat.*
+import android.opengl.EGL14
+import android.opengl.EGLExt
+import javax.microedition.khronos.egl.EGL10
+import javax.microedition.khronos.egl.EGLContext
+import javax.microedition.khronos.egl.EGLDisplay
 import kotlin.reflect.KProperty
 
 internal class MPVView(context: Context, attrs: AttributeSet) : GLSurfaceView(context, attrs) {
@@ -35,10 +40,13 @@ internal class MPVView(context: Context, attrs: AttributeSet) : GLSurfaceView(co
     }
 
     fun playFile(filePath: String) {
-        // Pick an EGLConfig with RGB8 color, 16-bit depth, no stencil,
-        // supporting OpenGL ES 3.0 or later backwards-compatible versions.
-        setEGLConfigChooser(8, 8, 8, 0, 16, 0)
-        setEGLContextClientVersion(2)
+        if (!EGL14.eglBindAPI(EGL14.EGL_OPENGL_API)) {
+            Log.e(TAG, "Failed to bind OpenGL API")
+        } else {
+            Log.v(TAG, "Succeeded to bind OpenGL API")
+        }
+//        setEGLConfigChooser(MyConfigChooser(8, 8, 8, 0, 16, 0))
+        setEGLContextFactory(MyContextFactory())
         var renderer = Renderer()
         renderer.setFilePath(filePath)
         setRenderer(renderer)
@@ -171,6 +179,34 @@ internal class MPVView(context: Context, attrs: AttributeSet) : GLSurfaceView(co
 
         fun setFilePath(file_path: String) {
             filePath = file_path
+        }
+    }
+
+    private inner class MyContextFactory : EGLContextFactory {
+        private val EGL_CONTEXT_CLIENT_VERSION = 0x3098
+
+        override fun createContext(egl: EGL10, display: EGLDisplay, config: EGLConfig): EGLContext {
+//            val attrib_list = intArrayOf(EGL_CONTEXT_CLIENT_VERSION, 2, EGL10.EGL_NONE)
+            val attrib_list = intArrayOf(EGL10.EGL_NONE)
+            val configAttrs = intArrayOf(
+                    EGL14.EGL_RENDERABLE_TYPE, EGL14.EGL_OPENGL_BIT,
+                    EGL14.EGL_NONE
+            )
+            val configs = arrayOfNulls<EGLConfig>(1)
+            val num_configs = IntArray(1)
+            egl.eglChooseConfig(display, configAttrs, configs, 1, num_configs)
+
+            Log.e(TAG, "num configs: ${num_configs[0]}")
+
+            return egl.eglCreateContext(display, configs[0], EGL10.EGL_NO_CONTEXT, attrib_list)
+        }
+
+        override fun destroyContext(egl: EGL10, display: EGLDisplay,
+                           context: EGLContext) {
+            if (!egl.eglDestroyContext(display, context)) {
+                Log.e(TAG, "display:$display context: $context")
+                Log.e(TAG, "eglDestroyContext error: ${egl.eglGetError()}")
+            }
         }
     }
 

@@ -132,6 +132,7 @@ jni_func(void, initGL) {
 
     if ((ret = mpv_opengl_cb_init_gl(mpv_gl, NULL, get_proc_address_mpv, NULL)) < 0) {
         ALOGE("mpv_opengl_cb_init_gl returned error %d", ret);
+        jni_func_name(step)(NULL, NULL);
         die("failed to initialize mpv GL context");
     }
 }
@@ -216,11 +217,13 @@ jni_func(void, step) {
             break;
         case MPV_EVENT_PROPERTY_CHANGE:
             mp_property = (mpv_event_property*)mp_event->data;
-            sendPropertyUpdateToJava(env, mp_property);
+            if (env)
+                sendPropertyUpdateToJava(env, mp_property);
             break;
         default:
             ALOGV("event: %s\n", mpv_event_name(mp_event->event_id));
-            sendEventToJava(env, mp_event->event_id);
+            if (env)
+                sendEventToJava(env, mp_event->event_id);
             break;
         }
     }
