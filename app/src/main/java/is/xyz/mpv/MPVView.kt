@@ -120,9 +120,9 @@ internal class MPVView(context: Context, attrs: AttributeSet) : /*GL*/SurfaceVie
     }
 
     fun onPause() {
-        /*queueEvent {
+        //queueEvent {
             MPVLib.setPropertyString("vid", "no")
-            MPVLib.destroyGL()
+            /*MPVLib.destroyGL()
         }*/
         paused = true
         //super.onPause()
@@ -271,6 +271,10 @@ internal class MPVView(context: Context, attrs: AttributeSet) : /*GL*/SurfaceVie
         if (filePath != null) {
             MPVLib.command(arrayOf("loadfile", filePath as String))
             filePath = null
+        } else {
+            // Get here when user goes to home screen and then returns to the app
+            // mpv disables video output when opengl context is destroyed, enable it back
+            MPVLib.setPropertyInt("vid", 1)
         }
     }
 
