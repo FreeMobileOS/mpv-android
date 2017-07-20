@@ -44,4 +44,10 @@
         android:summary="@string/pref_video_refreshrate_summary"
         android:title="@string/pref_video_refreshrate_title" />
 
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="video_dumb_mode"
+        android:summary="@string/pref_video_dumb_mode_summary"
+        android:title="@string/pref_video_dumb_mode_title" />
+
 </PreferenceScreen>

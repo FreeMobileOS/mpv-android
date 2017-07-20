@@ -2,7 +2,7 @@ package `is`.xyz.mpv
 
 import android.content.Context
 import android.media.AudioManager
-import android.opengl.GLSurfaceView
+//import android.opengl.GLSurfaceView
 import android.view.SurfaceView
 import android.view.SurfaceHolder
 import android.util.AttributeSet
@@ -34,9 +34,12 @@ internal class MPVView(context: Context, attrs: AttributeSet) : /*GL*/SurfaceVie
 
         // initial options
         data class Property(val preference_name: String, val mpv_option: String)
+        this.dumbMode = sharedPreferences.getBoolean("video_dumb_mode", false)
 
         // hwdec
-        val hwdec = if (sharedPreferences.getBoolean("hardware_decoding", true))
+        val hwdec = if (dumbMode)
+            "mediacodec"
+        else if (sharedPreferences.getBoolean("hardware_decoding", true))
             "mediacodec-copy"
         else
             "no"
@@ -95,8 +98,12 @@ internal class MPVView(context: Context, attrs: AttributeSet) : /*GL*/SurfaceVie
 
         // set options
 
-        MPVLib.setOptionString("vo", "opengl") //"opengl-cb")
-        MPVLib.setOptionString("opengl-backend", "android")
+        if (dumbMode) {
+            MPVLib.setOptionString("vo", "android")
+        } else {
+            MPVLib.setOptionString("vo", "opengl") //"opengl-cb")
+            MPVLib.setOptionString("opengl-backend", "android")
+        }
         MPVLib.setOptionString("hwdec", hwdec)
         MPVLib.setOptionString("hwdec-codecs", "h264,hevc,mpeg4,mpeg2video,vp8,vp9")
         MPVLib.setOptionString("ao", "opensles")
@@ -185,6 +192,7 @@ internal class MPVView(context: Context, attrs: AttributeSet) : /*GL*/SurfaceVie
     }
 
     private var filePath: String? = null
+    private var dumbMode = false
 
     // Property getters/setters
 
@@ -260,13 +268,16 @@ internal class MPVView(context: Context, attrs: AttributeSet) : /*GL*/SurfaceVie
     fun cyclePause() = MPVLib.command(arrayOf("cycle", "pause"))
     fun cycleAudio() = MPVLib.command(arrayOf("cycle", "audio"))
     fun cycleSub() = MPVLib.command(arrayOf("cycle", "sub"))
-    fun cycleHwdec() = MPVLib.setPropertyString("hwdec", if (hwdecActive!!) "no" else "mediacodec-copy")
+    fun cycleHwdec() {
+        if (!dumbMode) // impossible in dumb mode
+            MPVLib.setPropertyString("hwdec", if (hwdecActive!!) "no" else "mediacodec-copy")
+    }
 
     override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
     }
 
     override fun surfaceCreated(holder: SurfaceHolder) {
-        Log.w(TAG, "Creating libmpv Surface")
+        Log.w(TAG, "Creating libmpv surface")
         MPVLib.attachSurface(holder.surface)
         if (filePath != null) {
             MPVLib.command(arrayOf("loadfile", filePath as String))
