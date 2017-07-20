@@ -20,13 +20,8 @@ public class MPVLib {
      public static native void create(Context appctx);
      public static native void init();
      public static native void destroy();
-     public static native void initGL(GLSurfaceView view); // obsolete?
-     public static native void destroyGL();
      public static native void attachSurface(Surface surface);
      public static native void detachSurface();
-
-     public static native void resize(int width, int height);
-     public static native void draw();
 
      public static native void command(String[] cmd);
 
