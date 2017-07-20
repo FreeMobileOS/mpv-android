@@ -13,6 +13,8 @@
 extern "C" {
     jni_func(void, initGL, jobject view);
     jni_func(void, destroyGL);
+    jni_func(void, attachSurface, jobject surface_);
+    jni_func(void, detachSurface);
 
     jni_func(void, resize, jint width, jint height);
     jni_func(void, draw);
@@ -23,7 +25,7 @@ static int width, height;
 static pthread_mutex_t gl_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_once_t render_key_once = PTHREAD_ONCE_INIT;
 static pthread_key_t render_env;
-static jobject gl_view;
+static jobject gl_view, surface;
 
 jni_func(void, resize, jint w, jint h) {
     ALOGV("Resizing! width: %d=>%d, %d=>%d\n", width, w, height, h);
@@ -95,4 +97,18 @@ jni_func(void, destroyGL) {
 
     mpv_opengl_cb_uninit_gl(mpv_gl);
     mpv_gl = NULL;
+}
+
+jni_func(void, attachSurface, jobject surface_) {
+    surface = env->NewGlobalRef(surface_);
+    int64_t wid = (int64_t)(intptr_t) surface;
+    mpv_set_option(g_mpv, "wid", MPV_FORMAT_INT64, (void*) &wid);
+}
+
+jni_func(void, detachSurface) {
+    env->DeleteGlobalRef(surface);
+    surface = NULL;
+
+    int64_t wid = 0;
+    mpv_set_option(g_mpv, "wid", MPV_FORMAT_INT64, (void*) &wid);
 }

@@ -3,6 +3,8 @@ package `is`.xyz.mpv
 import android.content.Context
 import android.media.AudioManager
 import android.opengl.GLSurfaceView
+import android.view.SurfaceView
+import android.view.SurfaceHolder
 import android.util.AttributeSet
 import android.util.Log
 import android.view.WindowManager
@@ -15,9 +17,10 @@ import android.os.Build
 import android.preference.PreferenceManager
 import kotlin.reflect.KProperty
 
-internal class MPVView(context: Context, attrs: AttributeSet) : GLSurfaceView(context, attrs) {
+internal class MPVView(context: Context, attrs: AttributeSet) : /*GL*/SurfaceView(context, attrs), SurfaceHolder.Callback {
 
     fun initialize(configDir: String) {
+        holder.addCallback(this)
         MPVLib.create(this.context)
         MPVLib.setOptionString("config", "yes")
         MPVLib.setOptionString("config-dir", configDir)
@@ -25,7 +28,6 @@ internal class MPVView(context: Context, attrs: AttributeSet) : GLSurfaceView(co
         initOptions()
         observeProperties()
     }
-
 
     fun initOptions() {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this.context)
@@ -35,7 +37,7 @@ internal class MPVView(context: Context, attrs: AttributeSet) : GLSurfaceView(co
 
         // hwdec
         val hwdec = if (sharedPreferences.getBoolean("hardware_decoding", true))
-            "mediacodec"
+            "mediacodec-copy"
         else
             "no"
 
@@ -93,7 +95,8 @@ internal class MPVView(context: Context, attrs: AttributeSet) : GLSurfaceView(co
 
         // set options
 
-        MPVLib.setOptionString("vo", "opengl-cb")
+        MPVLib.setOptionString("vo", "opengl") //"opengl-cb")
+        MPVLib.setOptionString("opengl-backend", "android")
         MPVLib.setOptionString("hwdec", hwdec)
         MPVLib.setOptionString("hwdec-codecs", "h264,hevc,mpeg4,mpeg2video,vp8,vp9")
         MPVLib.setOptionString("ao", "opensles")
@@ -101,7 +104,7 @@ internal class MPVView(context: Context, attrs: AttributeSet) : GLSurfaceView(co
         MPVLib.setOptionString("tls-ca-file", "${this.context.filesDir.path}/cacert.pem")
     }
 
-    fun playFile(filePath: String) {
+    /*fun playFile(filePath: String) {
         // Pick an EGLConfig with RGB8 color, 16-bit depth, no stencil,
         // supporting OpenGL ES 3.0 or later backwards-compatible versions.
         setEGLContextClientVersion(2)
@@ -110,15 +113,22 @@ internal class MPVView(context: Context, attrs: AttributeSet) : GLSurfaceView(co
         renderer.setFilePath(filePath)
         setRenderer(renderer)
         renderMode = RENDERMODE_WHEN_DIRTY
+    }*/
+
+    fun playFile(filePath: String) {
+        this.filePath = filePath
     }
 
-    override fun onPause() {
-        queueEvent {
+    fun onPause() {
+        /*queueEvent {
             MPVLib.setPropertyString("vid", "no")
             MPVLib.destroyGL()
-        }
+        }*/
         paused = true
-        super.onPause()
+        //super.onPause()
+    }
+    
+    fun onResume() {
     }
 
     // Called when back button is pressed, or app is shutting down
@@ -173,6 +183,8 @@ internal class MPVView(context: Context, attrs: AttributeSet) : GLSurfaceView(co
             tracks[type]!!.add(track)
         }
     }
+
+    private var filePath: String? = null
 
     // Property getters/setters
 
@@ -248,9 +260,25 @@ internal class MPVView(context: Context, attrs: AttributeSet) : GLSurfaceView(co
     fun cyclePause() = MPVLib.command(arrayOf("cycle", "pause"))
     fun cycleAudio() = MPVLib.command(arrayOf("cycle", "audio"))
     fun cycleSub() = MPVLib.command(arrayOf("cycle", "sub"))
-    fun cycleHwdec() = MPVLib.setPropertyString("hwdec", if (hwdecActive!!) "no" else "mediacodec")
+    fun cycleHwdec() = MPVLib.setPropertyString("hwdec", if (hwdecActive!!) "no" else "mediacodec-copy")
 
-    private class Renderer(val glView: MPVView) : GLSurfaceView.Renderer {
+    override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
+    }
+
+    override fun surfaceCreated(holder: SurfaceHolder) {
+        Log.w(TAG, "Creating libmpv Surface")
+        MPVLib.attachSurface(holder.surface)
+        if (filePath != null) {
+            MPVLib.command(arrayOf("loadfile", filePath as String))
+            filePath = null
+        }
+    }
+
+    override fun surfaceDestroyed(holder: SurfaceHolder) {
+        MPVLib.detachSurface()
+    }
+
+    /*private class Renderer(val glView: MPVView) : GLSurfaceView.Renderer {
         private var filePath: String? = null
 
         override fun onDrawFrame(gl: GL10) {
@@ -277,7 +305,7 @@ internal class MPVView(context: Context, attrs: AttributeSet) : GLSurfaceView(co
         fun setFilePath(file_path: String) {
             filePath = file_path
         }
-    }
+    }*/
 
     companion object {
         private val TAG = "mpv"
