@@ -33,6 +33,9 @@
     <string name="pref_touch_gestures_title">Touch gestures</string>
     <string name="pref_touch_gestures_summary">Control brightness, volume or seek in either direction using touch gestures</string>
 
+    <string name="pref_ytdl_format_title">Youtube-dl formats</string>
+    <string name="pref_ytdl_format_hint">Format string passed to youtube-dl for quality/format selection. Read the ytdl documentation on these before changing this.</string>
+    <string name="pref_ytdl_format_summary">%s</string>
 
     <string name="pref_header_video">Video</string>
 

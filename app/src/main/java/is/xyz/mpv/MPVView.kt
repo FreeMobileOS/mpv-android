@@ -91,6 +91,13 @@ internal class MPVView(context: Context, attrs: AttributeSet) : GLSurfaceView(co
             MPVLib.setOptionString("vf", "gradfun=radius=12")
         }
 
+        var ytdl_format = sharedPreferences.getString("ytdl_format", "")
+        if (ytdl_format == "") { // prefer H.264 smaller or equal to 720p, fallback to what's available
+            ytdl_format = "[vcodec^=avc][height<=?720]/[vcodec^=mp4][height<=?720]/bestvideo+bestaudio/best"
+        }
+        MPVLib.setOptionString("ytdl", "yes")
+        MPVLib.setOptionString("ytdl-format", ytdl_format)
+
         // set options
 
         MPVLib.setOptionString("vo", "opengl-cb")
@@ -99,9 +106,6 @@ internal class MPVView(context: Context, attrs: AttributeSet) : GLSurfaceView(co
         MPVLib.setOptionString("ao", "opensles")
         MPVLib.setOptionString("tls-verify", "yes")
         MPVLib.setOptionString("tls-ca-file", "${this.context.filesDir.path}/cacert.pem")
-        MPVLib.setOptionString("ytdl", "yes")
-        // prefer H.264 smaller or equal to 720p, fallback to what's available
-        MPVLib.setOptionString("ytdl-format", "[vcodec^=avc][height<=?720]/[vcodec^=mp4][height<=?720]/bestvideo+bestaudio/best")
     }
 
     fun playFile(filePath: String) {
