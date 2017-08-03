@@ -100,6 +100,8 @@ internal class MPVView(context: Context, attrs: AttributeSet) : GLSurfaceView(co
         MPVLib.setOptionString("tls-verify", "yes")
         MPVLib.setOptionString("tls-ca-file", "${this.context.filesDir.path}/cacert.pem")
         MPVLib.setOptionString("ytdl", "yes")
+        // prefer H.264 smaller or equal to 720p, fallback to what's available
+        MPVLib.setOptionString("ytdl-format", "[vcodec^=avc][height<=?720]/[vcodec^=mp4][height<=?720]/bestvideo+bestaudio/best")
     }
 
     fun playFile(filePath: String) {
