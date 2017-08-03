@@ -99,6 +99,7 @@ internal class MPVView(context: Context, attrs: AttributeSet) : GLSurfaceView(co
         MPVLib.setOptionString("ao", "opensles")
         MPVLib.setOptionString("tls-verify", "yes")
         MPVLib.setOptionString("tls-ca-file", "${this.context.filesDir.path}/cacert.pem")
+        MPVLib.setOptionString("ytdl", "yes")
     }
 
     fun playFile(filePath: String) {
